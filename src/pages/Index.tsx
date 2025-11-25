@@ -3,7 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import Icon from '@/components/ui/icon';
+import Map from '@/components/Map';
 
 interface Event {
   id: number;
@@ -15,6 +17,8 @@ interface Event {
   price: string;
   image: string;
   isFavorite: boolean;
+  lat: number;
+  lng: number;
 }
 
 const categories = [
@@ -39,6 +43,8 @@ const mockEvents: Event[] = [
     price: 'Бесплатно',
     image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800',
     isFavorite: false,
+    lat: 48.4803,
+    lng: 135.0790,
   },
   {
     id: 2,
@@ -50,6 +56,8 @@ const mockEvents: Event[] = [
     price: '300 ₽',
     image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800',
     isFavorite: false,
+    lat: 48.4799,
+    lng: 135.0586,
   },
   {
     id: 3,
@@ -61,6 +69,8 @@ const mockEvents: Event[] = [
     price: '800 ₽',
     image: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=800',
     isFavorite: false,
+    lat: 48.4827,
+    lng: 135.0700,
   },
   {
     id: 4,
@@ -72,6 +82,8 @@ const mockEvents: Event[] = [
     price: '500-1500 ₽',
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
     isFavorite: false,
+    lat: 48.4836,
+    lng: 135.0596,
   },
   {
     id: 5,
@@ -83,6 +95,8 @@ const mockEvents: Event[] = [
     price: 'Бесплатно',
     image: 'https://images.unsplash.com/photo-1482575832494-771f74bf6857?w=800',
     isFavorite: false,
+    lat: 48.4850,
+    lng: 135.0750,
   },
   {
     id: 6,
@@ -94,6 +108,8 @@ const mockEvents: Event[] = [
     price: '400 ₽',
     image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800',
     isFavorite: false,
+    lat: 48.4795,
+    lng: 135.0650,
   },
   {
     id: 7,
@@ -105,6 +121,8 @@ const mockEvents: Event[] = [
     price: 'Бесплатно',
     image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800',
     isFavorite: false,
+    lat: 48.4835,
+    lng: 135.0838,
   },
   {
     id: 8,
@@ -116,6 +134,8 @@ const mockEvents: Event[] = [
     price: '200 ₽',
     image: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800',
     isFavorite: false,
+    lat: 48.4807,
+    lng: 135.0720,
   },
 ];
 
@@ -123,6 +143,8 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState('Все');
   const [searchQuery, setSearchQuery] = useState('');
   const [events, setEvents] = useState<Event[]>(mockEvents);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<number | undefined>();
 
   const filteredEvents = events.filter((event) => {
     const matchesCategory = selectedCategory === 'Все' || event.category === selectedCategory;
@@ -153,7 +175,7 @@ export default function Index() {
                 <p className="text-sm text-muted-foreground">Карта событий и мест</p>
               </div>
             </div>
-            <Button size="lg" className="shadow-md">
+            <Button size="lg" className="shadow-md" onClick={() => setIsMapOpen(true)}>
               <Icon name="MapPin" size={20} className="mr-2" />
               Карта
             </Button>
@@ -259,9 +281,16 @@ export default function Index() {
                   </div>
                 </div>
                 
-                <Button className="w-full mt-4 shadow-md" size="sm">
-                  Подробнее
-                  <Icon name="ArrowRight" size={16} className="ml-2" />
+                <Button 
+                  className="w-full mt-4 shadow-md" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedEventId(event.id);
+                    setIsMapOpen(true);
+                  }}
+                >
+                  Показать на карте
+                  <Icon name="MapPin" size={16} className="ml-2" />
                 </Button>
               </div>
             </Card>
@@ -326,6 +355,24 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      <Sheet open={isMapOpen} onOpenChange={setIsMapOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl p-0">
+          <SheetHeader className="p-6 pb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <Icon name="Map" size={24} className="text-primary" />
+              Карта Хабаровска
+            </SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(100vh-100px)] p-6 pt-0">
+            <Map 
+              events={filteredEvents} 
+              onEventClick={(id) => setSelectedEventId(id)}
+              selectedEventId={selectedEventId}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
