@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Get all future events",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Filter events by category",
+      "method": "GET",
+      "path": "/?category=Культура",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Search events by keyword",
+      "method": "GET",
+      "path": "/?search=концерт",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

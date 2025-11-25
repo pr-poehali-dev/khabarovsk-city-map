@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -139,26 +139,67 @@ const mockEvents: Event[] = [
   },
 ];
 
+const API_URL = 'https://functions.poehali.dev/349454e6-748c-47a0-a46a-9acfee46d950';
+
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState('Все');
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState<Event[]>(mockEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
-  const filteredEvents = events.filter((event) => {
-    const matchesCategory = selectedCategory === 'Все' || event.category === selectedCategory;
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFavorite = selectedCategory === 'Избранное' ? event.isFavorite : true;
-    
-    return matchesCategory && matchesSearch && matchesFavorite;
-  });
+  useEffect(() => {
+    fetchEvents();
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, [selectedCategory, searchQuery]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      let url = API_URL;
+      const params = new URLSearchParams();
+      
+      if (selectedCategory && selectedCategory !== 'Все' && selectedCategory !== 'Избранное') {
+        params.append('category', selectedCategory);
+      }
+      
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error('Ошибка загрузки событий:', error);
+      setEvents(mockEvents);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredEvents = selectedCategory === 'Избранное'
+    ? events.filter(event => favorites.has(event.id))
+    : events;
 
   const toggleFavorite = (id: number) => {
-    setEvents(events.map(event => 
-      event.id === id ? { ...event, isFavorite: !event.isFavorite } : event
-    ));
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(id)) {
+      newFavorites.delete(id);
+    } else {
+      newFavorites.add(id);
+    }
+    setFavorites(newFavorites);
+    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)));
   };
 
   return (
@@ -224,8 +265,13 @@ export default function Index() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredEvents.map((event, index) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredEvents.map((event, index) => (
             <Card
               key={event.id}
               className="overflow-hidden group hover:shadow-2xl transition-all duration-500 animate-fade-in border-border/50 hover:scale-[1.02]"
@@ -248,7 +294,7 @@ export default function Index() {
                   <Icon 
                     name="Heart" 
                     size={18} 
-                    className={event.isFavorite ? 'fill-red-500 text-red-500' : ''}
+                    className={favorites.has(event.id) ? 'fill-red-500 text-red-500' : ''}
                   />
                 </Button>
                 
@@ -295,9 +341,10 @@ export default function Index() {
               </div>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
 
-        {filteredEvents.length === 0 && (
+        {!loading && filteredEvents.length === 0 && (
           <div className="text-center py-20 animate-fade-in">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
               <Icon name="Search" size={40} className="text-muted-foreground" />
